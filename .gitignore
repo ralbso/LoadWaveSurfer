@@ -1,0 +1,6 @@
+*.pyc
+
+loadwavesurfer.egg-info/
+dist/
+build/
+.pytest_cache

@@ -1,0 +1,33 @@
+# pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "LoadWaveSurfer"
+version = "1.0.1"
+description = "Load and parse ephys data acquired using Janelia's WaveSurfer."
+readme = "README.md"
+authors = [{name = "Raul Mojica", email = "rmojica@mit.edu"}]
+license = {file = "LICENSE"}
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Operating System :: Microsoft :: Windows"
+]
+keywords = ["wavesurfer", "loader", "parser"]
+dependencies = [
+    "numpy >= 1.23.0", 
+    "pandas >= 1.4.0", 
+    "pywavesurfer >= 0.0.7",
+]
+requires-python = ">=3.7"
+
+[project.optional-dependencies]
+dev = ["black", "pytest", "pip-tools"]
+
+[project.urls]
+Homepage = "https://github.com/ralbso/LoadWaveSurfer"
+"Bug Tracker" = "https://github.com/ralbso/LoadWaveSurfer/issues"
