@@ -1,6 +1,7 @@
 *.pyc
 
 loadwavesurfer.egg-info/
+loadws-env/
 dist/
 build/
 .pytest_cache

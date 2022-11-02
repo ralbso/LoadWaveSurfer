@@ -98,10 +98,10 @@ class LoadWaveSurfer:
         self.Curr = np.hstack(Curr)
         self.Time = np.hstack(Time)
 
-        # # notch and lowpass filter
-        # if self.filter:
-        #     self.Volt = analysis.filter_data(self.Volt)
-        #     self.Curr = analysis.filter_data(self.Curr)
+        # notch and lowpass filter
+        if self.filter:
+            print('Filtering data...')
+            self.filterData()
 
         if self.ds_factor > 1:
             self.Time = self.Time[::self.ds_factor]
@@ -109,6 +109,20 @@ class LoadWaveSurfer:
             self.Curr = signal.decimate(self.Curr, q=self.ds_factor, ftype="iir").flatten()
 
         return Data(self.Volt, self.Curr, self.Time)
+
+    def filterData(self):
+        """Filter raw data to eliminate 60Hz noise and high, non-biological frequencies
+        """
+
+        b, a = signal.butter(N=1, Wn=[59, 61], btype="bandstop", output="ba", fs=20e3)
+        filtvolt = signal.filtfilt(b, a, self.Volt)
+        filtcurr = signal.filtfilt(b, a, self.Curr)
+
+        b, a = signal.butter(N=1, Wn=200, btype="lowpass", output="ba", fs=20e3)
+        self.Volt = signal.filtfilt(b, a, filtvolt)
+        self.Curr = signal.filtfilt(b, a, filtcurr)
+
+        return
 
     def rawData(self):
         """Load raw data
