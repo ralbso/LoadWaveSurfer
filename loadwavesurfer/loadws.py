@@ -7,7 +7,7 @@ import pandas as pd
 from pywavesurfer import ws
 from pathlib import Path
 
-Data = namedtuple("Data", ("volt", "curr", "time"))
+Data = namedtuple("Data", ("volt", "curr", "time", "ttl"))
 Params = namedtuple(
     "Params",
     (
@@ -78,10 +78,12 @@ class LoadWaveSurfer:
         Volt = []
         Curr = []
         Time = []
+        TTL = []
 
         for sweep in sweeps:
             voltage = f[sweep]["analogScans"][0]
             current = f[sweep]["analogScans"][1]
+
             time_offset = f[sweep]["timestamp"]
             sweep_start = clock_at_start + time_offset
             time_vec = np.arange(sweep_start, (len(voltage) / freq) + sweep_start, 1 / freq)
@@ -94,21 +96,39 @@ class LoadWaveSurfer:
             Curr.append(current)
             Time.append(time_vec)
 
+            try:
+                ttl = f[sweep]["digitalScans"][0]
+                TTL.append(ttl)
+            except KeyError as e:
+                # No digital signal found in sweep. Silently handle error.
+                pass
+
         self.Volt = np.hstack(Volt)
         self.Curr = np.hstack(Curr)
         self.Time = np.hstack(Time)
 
+        try:
+            self.TTL = np.hstack(TTL)
+        except ValueError as e:
+            self.TTL = [np.nan] * len(self.Volt)
+            pass
+
         # notch and lowpass filter
         if self.filter:
-            print('Filtering data...')
             self.filterData()
 
         if self.ds_factor > 1:
             self.Time = self.Time[::self.ds_factor]
-            self.Volt = signal.decimate(self.Volt, q=self.ds_factor, ftype="iir").flatten()
-            self.Curr = signal.decimate(self.Curr, q=self.ds_factor, ftype="iir").flatten()
+            self.Volt = signal.decimate(self.Volt, q=self.ds_factor, ftype="fir").flatten()
+            self.Curr = signal.decimate(self.Curr, q=self.ds_factor, ftype="fir").flatten()
 
-        return Data(self.Volt, self.Curr, self.Time)
+            try:
+                self.TTL = self.TTL[::self.ds_factor]
+            except ValueError as e:
+                self.TTL = 0
+                pass
+
+        return Data(self.Volt, self.Curr, self.Time, self.TTL)
 
     def filterData(self):
         """Filter raw data to eliminate 60Hz noise and high, non-biological frequencies
@@ -137,8 +157,8 @@ class LoadWaveSurfer:
     def toDF(self):
         """Convert WaveSurfer data to pandas DataFrame format
         """
-        all_data = zip(self.Time, self.Volt, self.Curr)
-        df = pd.DataFrame(all_data, columns=["time", "volt", "curr"])
+        all_data = zip(self.Time, self.Volt, self.Curr, self.TTL)
+        df = pd.DataFrame(all_data, columns=["time", "volt", "curr", "ttl"])
 
         return df
 
