@@ -157,8 +157,13 @@ class LoadWaveSurfer:
     def toDF(self):
         """Convert WaveSurfer data to pandas DataFrame format
         """
-        all_data = zip(self.Time, self.Volt, self.Curr, self.TTL)
-        df = pd.DataFrame(all_data, columns=["time", "volt", "curr", "ttl"])
+        all_data = {
+            'time': self.Time,
+            'volt': self.Volt,
+            'curr': self.Curr,
+            'ttl': self.TTL
+        }
+        df = pd.DataFrame.from_dict(all_data)
 
         return df
 
