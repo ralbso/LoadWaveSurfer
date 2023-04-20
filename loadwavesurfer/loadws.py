@@ -157,12 +157,7 @@ class LoadWaveSurfer:
     def toDF(self):
         """Convert WaveSurfer data to pandas DataFrame format
         """
-        all_data = {
-            'time': self.Time,
-            'volt': self.Volt,
-            'curr': self.Curr,
-            'ttl': self.TTL
-        }
+        all_data = {'time': self.Time, 'volt': self.Volt, 'curr': self.Curr, 'ttl': self.TTL}
         df = pd.DataFrame.from_dict(all_data)
 
         return df
@@ -483,16 +478,24 @@ class LoadWaveSurfer:
         return volt_units, curr_units, time_units
 
     def channelScales(self):
-        """Get numeric scales for voltage and current channels
+        """Get scale factors for analog input and output channels
 
         Returns
         -------
-        tuple of floats
-            Tuple containing the voltage scale first, and the current scale second
+        dict
+            Scale factors for input and output channels in `V/V` (voltage AI and AO),
+            `V/A` (current AI) and `A/V` (current AO)
         """
-        volt_scale = self.params["AIChannelScales"].flatten()[0]
-        curr_scale = self.params["AIChannelScales"].flatten()[1]
-        return volt_scale, curr_scale
+        mV = 1e-3
+        pA = 1e-12
+        scales = {
+            'volt_ai': self.params["AIChannelScales"].flatten()[0] / mV,
+            'volt_ao': self.params["AOChannelScales"].flatten()[1] * mV,
+            'curr_ai': self.params["AIChannelScales"].flatten()[1] / pA,
+            'curr_ao': self.params["AOChannelScales"].flatten()[0] * pA
+        }
+
+        return scales
 
     def getSweepDuration(self):
         """Get sweep duration if set to a finite number
@@ -574,7 +577,7 @@ class LoadWaveSurfer:
         """
         return self.ds_factor
 
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod(name='__init__')
-
