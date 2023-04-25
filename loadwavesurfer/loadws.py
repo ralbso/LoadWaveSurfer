@@ -455,9 +455,11 @@ class LoadWaveSurfer:
             MIN = int(clock_at_start[4])
             SEC = round(clock_at_start[5], 14)  # we must round to evade a rare inifinite float
 
-            clock_at_start = f"{YEAR}/{MONTH}/{DAY} {HOUR}{MIN}{SEC}"
+            clock_at_start = f"{YEAR}/{MONTH}/{DAY} {HOUR:02}{MIN:02}{SEC:02}"
             clock_at_start = (datetime.strptime(clock_at_start,
-                                                "%Y/%m/%d %-H%-M%-S.%f").astimezone().timestamp())
+                                                "%Y/%m/%d %H%M%S.%f").astimezone().timestamp())
+
+            print(datetime.fromtimestamp(clock_at_start))
         except ValueError as msg:
             print(msg)
             clock_at_start = self.params["ClockAtRunStart"]
