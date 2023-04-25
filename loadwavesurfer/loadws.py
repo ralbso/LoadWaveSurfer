@@ -457,7 +457,7 @@ class LoadWaveSurfer:
 
             clock_at_start = f"{YEAR}/{MONTH}/{DAY} {HOUR}{MIN}{SEC}"
             clock_at_start = (datetime.strptime(clock_at_start,
-                                                "%Y/%m/%d %H%M%S.%f").astimezone().timestamp())
+                                                "%Y/%m/%d %-H%-M%-S.%f").astimezone().timestamp())
         except ValueError as msg:
             print(msg)
             clock_at_start = self.params["ClockAtRunStart"]
