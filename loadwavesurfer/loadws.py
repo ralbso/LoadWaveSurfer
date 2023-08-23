@@ -37,11 +37,14 @@ class LoadWaveSurfer:
         downsampling_factor : int, optional
             Downsampling factor to use with `signal.decimate()`, by default 1.0 (no downsampling).        
         """
-
-        if inputFile[-3:] != ".h5":
-            inputFile = inputFile + ".h5"
-
-        self.inputFile = Path(inputFile)
+        if isinstance(inputFile, str):
+            if inputFile[-3:] != ".h5":
+                inputFile = inputFile + ".h5"
+            self.inputFile = Path(inputFile)
+        elif isinstance(inputFile, Path):
+            self.inputFile = inputFile
+        else:
+            raise TypeError("Input file must be a string or pathlib.Path object")
 
         self.filter = filt
 
@@ -284,73 +287,94 @@ class LoadWaveSurfer:
 
                 for count, val in enumerate(maps.values()):
                     map_idx = int(val)
-                    map_metadata = stim_lib["Maps"][f"element{map_idx}"]
-
+                    
                     if isinstance(sweepNumber, np.ndarray):
                         timestamp.append(
                             self.rawData()[f"sweep_{int(sweepNumber[count]):04}"]["timestamp"])
                     elif isinstance(sweepNumber, str):
                         timestamp.append(
                             self.rawData()[f"sweep_{int(sweepNumber):04}"]["timestamp"])
+                        
+                    if map_idx != 0:
+                        map_metadata = stim_lib["Maps"][f"element{map_idx}"]
 
-                    if isinstance(map_metadata["IndexOfEachStimulusInLibrary"], bytes):
-                        break
+                        if isinstance(map_metadata["IndexOfEachStimulusInLibrary"], bytes):
+                            break
 
-                    else:
-                        multiplier = map_metadata["Multiplier"].flatten()[0]
+                        else:
+                            multiplier = map_metadata["Multiplier"].flatten()[0]
 
-                        stim_index = int(map_metadata["IndexOfEachStimulusInLibrary"]["element1"])
-                        stim_metadata = stim_lib["Stimuli"][f"element{stim_index}"]["Delegate"]
+                            stim_index = int(map_metadata["IndexOfEachStimulusInLibrary"]["element1"])
+                            stim_metadata = stim_lib["Stimuli"][f"element{stim_index}"]["Delegate"]
 
-                        stim_type = stim_metadata["TypeString"].astype("str")
+                            stim_type = stim_metadata["TypeString"].astype("str")
 
-                        if stim_type == "SquarePulseLadder":
+                            if stim_type == "SquarePulseLadder":
 
-                            delay.append(float(stim_metadata["Delay"]))
-                            pulseCount.append(int(stim_metadata["PulseCount"]))
-                            pulseDuration.append(float(stim_metadata["PulseDuration"]))
-                            delayBetweenPulses.append(float(stim_metadata["DelayBetweenPulses"]))
-                            ampChangePerPulse.append(
-                                float(stim_metadata["AmplitudeChangePerPulse"]) * multiplier)
-                            firstPulseAmp.append(
-                                float(stim_metadata["FirstPulseAmplitude"]) * multiplier)
+                                _delay = float(stim_metadata["Delay"])
+                                _pulseCount = int(stim_metadata["PulseCount"])
+                                _pulseDuration = float(stim_metadata["PulseDuration"])
+                                _delayBetweenPulses = float(stim_metadata["DelayBetweenPulses"])
+                                _ampChangePerPulse = float(stim_metadata["AmplitudeChangePerPulse"]) * multiplier
+                                _firstPulseAmp = float(stim_metadata["FirstPulseAmplitude"]) * multiplier
 
-                            length = (2 * delay[count] +
-                                      (pulseDuration[count] + delayBetweenPulses[count]) *
-                                      pulseCount[count] - delayBetweenPulses[count])
+                                delay.append(_delay)
+                                pulseCount.append(_pulseCount)
+                                pulseDuration.append(_pulseDuration)
+                                delayBetweenPulses.append(_delayBetweenPulses)
+                                ampChangePerPulse.append(_ampChangePerPulse)
+                                firstPulseAmp.append(_firstPulseAmp)
 
-                            if pulseCountCorrection:
-                                pulseCount[count] -= 1
+                                length = (2 * _delay + (_pulseDuration + _delayBetweenPulses) * _pulseCount - _delayBetweenPulses)
 
-                            if length < self.getSweepDuration():
-                                stimLength.append(self.getSweepDuration())
+                                if pulseCountCorrection:
+                                    pulseCount[count] -= 1
 
-                            else:
-                                stimLength.append(length)
+                                if length < self.getSweepDuration():
+                                    stimLength.append(self.getSweepDuration())
 
-                            # realLength.append(stimLength[count] + timestamp[count] - np.sum(realLength))
+                                else:
+                                    stimLength.append(length)
 
-                        elif stim_type == "SquarePulse":
-                            delay.append(float(stim_metadata["Delay"]))
-                            pulseCount.append(1)
-                            pulseDuration.append(float(stim_metadata["Duration"]))
-                            delayBetweenPulses.append(0)
-                            ampChangePerPulse.append(0)
-                            firstPulseAmp.append(float(stim_metadata["Amplitude"]) * multiplier)
+                                # realLength.append(stimLength[count] + timestamp[count] - np.sum(realLength))
 
-                            length = 2 * delay[count] + pulseDuration[count]
+                            elif stim_type == "SquarePulse":
+                                delay.append(float(stim_metadata["Delay"]))
+                                pulseCount.append(1)
+                                pulseDuration.append(float(stim_metadata["Duration"]))
+                                delayBetweenPulses.append(0)
+                                ampChangePerPulse.append(0)
+                                firstPulseAmp.append(float(stim_metadata["Amplitude"]) * multiplier)
 
-                            if length > map_metadata["Duration"]:
-                                stimLength.append(map_metadata["Duration"])
-                                pulseCount[count] -= 1
+                                length = 2 * delay[count] + pulseDuration[count]
 
-                            elif length < self.getSweepDuration():
-                                stimLength.append(self.getSweepDuration())
+                                if length > map_metadata["Duration"]:
+                                    stimLength.append(map_metadata["Duration"])
+                                    pulseCount[count] -= 1
 
-                            else:
-                                stimLength.append(length)
+                                elif length < self.getSweepDuration():
+                                    stimLength.append(self.getSweepDuration())
 
-                            # realLength.append(stimLength[count] + timestamp[count])
+                                else:
+                                    stimLength.append(length)
+
+                                # realLength.append(stimLength[count] + timestamp[count])
+                    elif map_idx == 0:
+                        _delay = 0
+                        _pulseCount = 0
+                        _pulseDuration = 0
+                        _delayBetweenPulses = 0
+                        _ampChangePerPulse = 0
+                        _firstPulseAmp = 0
+
+                        delay.append(_delay)
+                        pulseCount.append(_pulseCount)
+                        pulseDuration.append(_pulseDuration)
+                        delayBetweenPulses.append(_delayBetweenPulses)
+                        ampChangePerPulse.append(_ampChangePerPulse)
+                        firstPulseAmp.append(_firstPulseAmp)
+
+                        length = 60
 
         else:
             # print("No stimulation detected")
