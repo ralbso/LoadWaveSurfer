@@ -290,10 +290,10 @@ class LoadWaveSurfer:
                     
                     if isinstance(sweepNumber, np.ndarray):
                         timestamp.append(
-                            self.rawData()[f"sweep_{int(sweepNumber[count]):04}"]["timestamp"])
+                            self.rawData()[f"sweep_{int(sweepNumber[count]):04}"]["timestamp"][0][0])
                     elif isinstance(sweepNumber, str):
                         timestamp.append(
-                            self.rawData()[f"sweep_{int(sweepNumber):04}"]["timestamp"])
+                            self.rawData()[f"sweep_{int(sweepNumber):04}"]["timestamp"][0][0])
                         
                     if map_idx != 0:
                         map_metadata = stim_lib["Maps"][f"element{map_idx}"]
