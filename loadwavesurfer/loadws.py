@@ -302,12 +302,16 @@ class LoadWaveSurfer:
                             break
 
                         else:
-                            multiplier = map_metadata["Multiplier"].flatten()[0]
+                            try:
+                                multiplier = map_metadata["Multiplier"].flatten()[0]
+                                stim_index = int(map_metadata["IndexOfEachStimulusInLibrary"]["element1"])
+                                stim_metadata = stim_lib["Stimuli"][f"element{stim_index}"]["Delegate"]
 
-                            stim_index = int(map_metadata["IndexOfEachStimulusInLibrary"]["element1"])
-                            stim_metadata = stim_lib["Stimuli"][f"element{stim_index}"]["Delegate"]
-
-                            stim_type = stim_metadata["TypeString"].astype("str")
+                                stim_type = stim_metadata["TypeString"].astype("str")
+                            except IndexError:
+                                # handle the case where the map is empty
+                                # this may happen when a map is created but no sequences are added
+                                stim_type = "Break"
 
                             if stim_type == "SquarePulseLadder":
 
@@ -359,6 +363,16 @@ class LoadWaveSurfer:
                                     stimLength.append(length)
 
                                 # realLength.append(stimLength[count] + timestamp[count])
+
+                            elif stim_type == "Break":
+                                delay.append(0)
+                                pulseCount.append(0)
+                                pulseDuration.append(0)
+                                delayBetweenPulses.append(0)
+                                ampChangePerPulse.append(0)
+                                firstPulseAmp.append(0)
+                                length = 60.0
+
                     elif map_idx == 0:
                         _delay = 0
                         _pulseCount = 0
